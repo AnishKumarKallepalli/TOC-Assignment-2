@@ -9,7 +9,7 @@
 #define EXIT_SUCCESS 0
 
 char *tokens[MAX_TOKENS];
-int num_tokens;
+int num_tokens = 0;
 char *delimiters = " ";
 
 void add_spaces_around_chars(char *str, const char *chars)
@@ -62,34 +62,37 @@ int tokenize(char *input, char *tokens[])
   return num_tokens;
 }
 
-int main(int argc, char **argv)
+void tokenizer(char *filename)
 {
-
-  if (argc < 2)
-  {
-    perror("Pass the name of the input file as the first parameter. e.g.: ./simulator input.txt");
-    exit(EXIT_FAILURE);
-  }
-  FILE *in_file = fopen(argv[1], "r");
+  FILE *in_file = fopen(filename, "r");
   char line[MAX_TOKENS];
   char str[MAX_TOKENS];
-  int j=0;
+  int j = 0;
   while (fgets(line, MAX_LINE_LENGTH, in_file))
   {
     for (int i = 0; i < strlen(line); ++i)
     {
       if (line[i] == '\t' || line[i] == '\n' || line[i] == '\r')
-                continue;
-      str[j]=line[i];
+        continue;
+      str[j] = line[i];
       j++;
     }
   }
   add_spaces_around_chars(str, ",;=>+-*/(){}");
   num_tokens = tokenize(str, tokens);
-    for (int i = 0; i < num_tokens; i++)
-      {
-        printf("Token %d: %s\n", i + 1, tokens[i]);
-      }
+}
 
+int main(int argc, char **argv)
+{
+  if (argc < 2)
+  {
+    perror("Pass the name of the input file as the first parameter. e.g.: ./simulator input.txt");
+    exit(EXIT_FAILURE);
+  }
+  tokenizer(argv[1]);
+  for (int i = 0; i < num_tokens; i++)
+  {
+    printf("Token %d: %s\n", i + 1, tokens[i]);
+  }
   return 0;
 }
