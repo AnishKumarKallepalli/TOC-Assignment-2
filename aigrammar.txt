@@ -1,0 +1,20 @@
+<program> ::= <statement> | <program> ; <statement>
+
+<statement> ::= <declaration-statement> | <read-statement> | <write-statement> | <assignment-statement> | <for-loop>
+
+<declaration-statement> ::= int <variable-list> ;
+<variable-list> ::= <variable> | <variable> , <variable-list>
+<variable> ::= a | b | c | d | e | f | g | h | i | j | k | l | m | n | o | p | q | r | s | t | u | v | w | x | y | z
+
+<read-statement> ::= read <variable>
+
+<write-statement> ::= write <variable> | write <constant>
+<constant> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
+<assignment-statement> ::= <variable> = <expression>
+<expression> ::= <term> | <expression> + <term> | <expression> - <term>
+<term> ::= <factor> | <term> * <factor> | <term> / <factor>
+<factor> ::= <variable> | <constant> | <expression> > <expression> | <expression> == <expression> | ( <expression> )
+
+<for-loop> ::= for( <expression> ; <expression> ; <expression> ) { <statements> }
+<statements> ::= <statement> | <statements> ; <statement>
