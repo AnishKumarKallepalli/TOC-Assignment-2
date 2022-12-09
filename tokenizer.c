@@ -21,11 +21,17 @@ void add_spaces_around_chars(char *str, const char *chars)
   // Initialize variables
   char *out = str;
 
+  int len = strlen(temp);
+
   // Loop through all characters in the string
-  for (int i = 0; i < strlen(temp); i++)
+  for (int i = 0; i < len; i++)
   {
+    if(i < len - 1 && temp[i] == '=' && temp[i + 1] == '='){
+      *out++ = temp[i++];
+      *out++ = temp[i];
+    }
     // Check if the current character is in the set of characters
-    if (strchr(chars, temp[i]))
+    else if (strchr(chars, temp[i]))
     {
       // Add a space before the character
       *out++ = ' ';
