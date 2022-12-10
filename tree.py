@@ -1,7 +1,7 @@
 from nltk.tree import *
 
 # assign your output (generalied list of the syntax tree) to varaible text
-text = "[P[D[int][V[Var[forr]][,][V[Var[b]][,][V[Var[c]][,][V[Var[howareyou]]]]]][;]][S[Sing[R[read][Var[b]][;]]][S[Sing[W[write][Var[b]][;]]][S[Sing[W[write][Const[5632]][;]]]]]]]"
+text = "[P[D[int][V[Var[b]][,][V[Var[c]]]][;]][S[Sing[Ass[Var[b]][=][Exp[AS[MD[Fact[Const[3]]]][+][AS[MD[Fact[(][Exp[AS[MD[Fact[Const[4]]]]][>][Exp[AS[MD[Fact[Const[5]]]]]]][)]][*][MD[Fact[Const[6]]]]]]][==][Exp[AS[MD[Fact[Const[1]]]]]]]]]]]"
 
 
 text = text.replace("(", "ob")    #in the syntax tree, 'ob' will display in place of '('

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <ctype.h>
+#include <assert.h>
 #include <stdbool.h>
 
 #define MAX_TOKENS (1000000)
@@ -22,6 +23,10 @@
 #define VARIABLE "Var"
 #define CONST "Const"
 #define LOOP "Loop"
+#define EXPRESSION "Exp"
+#define ADD_SUBTRACT "AS"
+#define MUL_DIVIDE "MD"
+#define FACT "Fact"
 
 char *tokens[MAX_TOKENS];
 int num_tokens = 0;
@@ -35,29 +40,32 @@ typedef struct{
     int value;
 } var;
 
-typedef struct{
+typedef struct node{
     char name[50];
-    node* children[50];
+    struct node* children[50];
 } node;
 
 var variables[MAX_VARIABLES];
 int variable_count = 0;
 
 
-void parse_program(int);
-void parse_declaration(int);
-void parse_multiple_variables(int);
-void parse_variable(int);
-void parse_constant(int);
-void parse_statement(int);
-int parse_single_statement(int);
-int parse_expression(int, int*);
-int parse_assignment(int);
-int parse_read(int);
-int parse_write(int);
-int parse_for_loop(int);
+void parse_program(int, node*);
+void parse_declaration(int, node*);
+void parse_multiple_variables(int, node*);
+void parse_variable(int, node*);
+void parse_constant(int, node*);
+void parse_statement(int, node*);
+int parse_single_statement(int, node*);
+int parse_assignment(int, node*);
+int parse_read(int, node*);
+int parse_write(int, node*);
+int parse_for_loop(int, node*);
+int parse_full_expression(int, int, node*);
+int parse_add_subtract(int, int, node*);
+int parse_mul_div(int, int, node*);
+int parse_fact(int, int, node*);
 
-int (*parser_functions[4])(int index) = {parse_for_loop, parse_read, parse_write, parse_assignment};
+int (*parser_functions[4])(int index, node* root) = {parse_for_loop, parse_read, parse_write, parse_assignment};
 // void (*parser_functions[5])(int index);
 
 
@@ -199,6 +207,19 @@ void add_variable(char *str){
 	return;
 }
 
+void print_syntax_tree(node *root){
+
+	printf("[%s", root -> name);
+
+	int child = 0;
+	while(root -> children[child] != NULL){
+		print_syntax_tree(root -> children[child]);
+		child++;
+	}
+
+	printf("]");
+}
+
 int main(int argc, char **argv){
 
     if (argc < 2)
@@ -207,152 +228,199 @@ int main(int argc, char **argv){
       exit(EXIT_FAILURE);
     }
     tokenizer(argv[1]);
-    node* root;
+	  // tokenizer("input.txt");
+    node* root = malloc(sizeof(node));
+
     parse_program(0,root);
-    printf("%s\n", tree);
+    print_syntax_tree(root);
+	printf("\n");
     return 0;
 }
 
-void parse_program(int index,node* root){
+void parse_program(int index, node* root){
+
     int c = 0;
-    root = malloc(sizeof(node*));
-    strcpy(root->name,PROGRAM);
+    strcpy(root -> name,PROGRAM);
+
+    root -> children[c] = malloc(sizeof(node));
+
     if(strcmp(tokens[index], "int") == 0){
-        parse_declaration(index,root->children[c++]);
+        parse_declaration(index,root -> children[c++]);
     }
-    // while (tokens[index++][0] != ';') ;
+
+    while (tokens[index++][0] != ';') ;
+
     if(index == num_tokens){
         return;
     }    
-    parse_statement(index,root->children[c++]);
+
+	root -> children[c] = malloc(sizeof(node));
+    parse_statement(index,root -> children[c++]);
 }
 
-void parse_declaration(int index,node* root){
+void parse_declaration(int index,  node* root){
 
     int c = 0;
-    root = malloc(sizeof(node*));
-    strcpy(root->name,DECLARATION);
-    root->children[c] = malloc(sizeof(node*));
-    strcpy(root->children[c++]->name,"int");
+    strcpy(root -> name,DECLARATION);
+
+    root -> children[c] = malloc(sizeof(node));
+    strcpy(root -> children[c++] -> name,"int");
     index++;
 
-    parse_multiple_variables(index,root->children[c++]);
+	root -> children[c] = malloc(sizeof(node));
+    parse_multiple_variables(index,root -> children[c++]);
 
-
-    root->children[c] =  malloc(sizeof(node*));
-    strcpy(root->children[c]->name,";");
+    root -> children[c] =  malloc(sizeof(node));
+    strcpy(root -> children[c] -> name,";");
 }
 
-void parse_multiple_variables(int index,node* root){
+void parse_multiple_variables(int index, node* root){
 
     int c = 0;
-    root = malloc(sizeof(node*));
-    strcpy(root->name,VAR_LIST);
+    strcpy(root -> name, VAR_LIST);
+	
+	root -> children[c] = malloc(sizeof(node));
+    parse_variable(index, root -> children[c++]);
 
-    parse_variable(index,root->children[c++]);
+	add_variable(tokens[index]);
 
-
-	  add_variable(tokens[index]);
     index++;
     if(tokens[index][0] == ';'){
         return;
-    }
-    root->children[c] =  malloc(sizeof(node*));
-    strcpy(root->children[c++]->name,",");
+    } 
+	
+	if(tokens[index][0] != ','){
+		fprintf(stderr, "Variables should be seperated by ','\n");
+		exit(EXIT_SUCCESS);
+	}
+
+    root -> children[c] =  malloc(sizeof(node));
+    strcpy(root -> children[c++] -> name,",");
     index++;
 
-    parse_multiple_variables(index,root->children[c]);
+	root -> children[c] =  malloc(sizeof(node));
+    parse_multiple_variables(index,root -> children[c]);
 }
 
-void parse_variable(int index,node* root){
+void parse_variable(int index, node* root){
+
     if(!valid_indentifier(tokens[index])){
         fprintf(stderr, "Invalid variable name\n");
         exit(EXIT_FAILURE);
     }
+
     int c = 0;
-    root = malloc(sizeof(node*));
-    strcpy(root->name,VARIABLE);
-    strcpy(root->children[c]->name,tokens[index]);
+    strcpy(root -> name,VARIABLE);
+
+	root -> children[c] = malloc(sizeof(node));
+    strcpy(root -> children[c++] -> name, tokens[index]);
+
     return;
 }
 
-void parse_constant(int index,node* root){
+void parse_constant(int index, node* root){
 
 	if(!is_const(tokens[index])){
 		fprintf(stderr, "Invalid constant, constant should be a number, given constant is - %s\n", tokens[index]);
 		exit(EXIT_FAILURE);
 	}
-  int c = 0;
-  root = malloc(sizeof(node*));
-	strcpy(root->name,CONST);
-  root->children[c] =  malloc(sizeof(node*));
-	strcpy(root->children[c]->name,tokens[index]);
+ 	
+	int c = 0;
+	strcpy(root -> name,CONST);
+
+  	root -> children[c] =  malloc(sizeof(node));
+	strcpy(root -> children[c] -> name,tokens[index]);
 }
 
-void parse_statement(int index,node* root){
-  int c = 0;
-  root = malloc(sizeof(node*));
-  strcpy(root->name,STATEMENT);
-	index = parse_single_statement(index,root->children[c++]);
+void parse_statement(int index, node* root){
+
+	int c = 0;
+	strcpy(root -> name,STATEMENT);
+
+	root -> children[c] = malloc(sizeof(node));
+	index = parse_single_statement(index,root -> children[c++]);
+
 	if(index < num_tokens){
-		parse_statement(index,root->children[c++]);
+		root -> children[c] = malloc(sizeof(node));
+		parse_statement(index,root -> children[c++]);
 	}
 }
 
 int parse_single_statement(int index,node* root){
+
     int c = 0;
-    root = malloc(sizeof(node*));
     strcpy(root->name,SINGLE_STATEMENT);
+
     int idx = is_keyword(tokens[index]);
+
     if(idx >= 0 && idx < 3){
-        index = parser_functions[idx](index);
+		root -> children[c] = malloc(sizeof(node));
+        index = parser_functions[idx](index, root -> children[c++]);
     }
     else{
-        index = parse_assignment(index,root->children[c++]);
+		root -> children[c] = malloc(sizeof(node));
+        index = parse_assignment(index,root -> children[c++]);
     }
+
     return index;
 }
 
 int parse_write(int index,node* root){
-  int c = 0;
-  root = malloc(sizeof(node*));
-  strcpy(root->name,WRITE);
-
-  root->children[c] =  malloc(sizeof(node*));
-  strcpy(root->children[c++]->name,"write");
-
-
+	
 	if(strcmp(tokens[index], "write")){
-		fprintf(stderr, "Should start with write, start with - %s\n", tokens[index]);
-		exit(EXIT_FAILURE);
-	}
+			fprintf(stderr, "Should start with write, start with - %s\n", tokens[index]);
+			exit(EXIT_FAILURE);
+		}
+	
+	int c = 0;
+	strcpy(root->name,WRITE);
+
+	root -> children[c] =  malloc(sizeof(node));
+	strcpy(root -> children[c++]->name,"write");
+
+
 	int idx;
 	index++;
+
 	if((idx = is_variable(tokens[index])) >= 0){
-		parse_variable(index,root->children[c++]);
+		root -> children[c] = malloc(sizeof(node));
+		parse_variable(index, root -> children[c++]);
 		printf("%d\n", variables[idx].value);
 	}
-	else{
-		parse_constant(index,root->children[c++]);
+	else if(is_const(tokens[index])){
+		root -> children[c] = malloc(sizeof(node));
+		parse_constant(index,root -> children[c++]);
 		printf("%s\n", tokens[index]);
 	}
-  root->children[c] =  malloc(sizeof(node*));
-  strcpy(root->children[c++]->name,";");
+	else{
+		fprintf(stderr, "write should be followed either by a variable or a integer constant, %s is neither\n", tokens[index]);
+		exit(EXIT_FAILURE);
+	}
+
+	if(tokens[index + 1][0] != ';'){
+		fprintf(stderr, "Write statement should terminate with ';'\n");
+		exit(EXIT_FAILURE);
+	}
+
+	root -> children[c] =  malloc(sizeof(node));
+	strcpy(root -> children[c++] -> name,";");
+
 	return index + 2;
 }
 
 int parse_read(int index,node* root){
-  int c = 0;
-  root = malloc(sizeof(node*));
-  strcpy(root->name,READ);
-  
-  root->children[c] =  malloc(sizeof(node*));
-  strcpy(root->children[c++]->name,"read");
-
+	
 	if(strcmp(tokens[index], "read")){
-		fprintf(stderr, "Should start with read, start with - %s\n", tokens[index]);
-		exit(EXIT_FAILURE);
-	}
+			fprintf(stderr, "Should start with read, start with - %s\n", tokens[index]);
+			exit(EXIT_FAILURE);
+		}
+
+	int c = 0;
+	strcpy(root->name,READ);
+	
+	root -> children[c] =  malloc(sizeof(node));
+	strcpy(root -> children[c++] -> name,"read");
+
 	index++;
 	int idx = is_variable(tokens[index]);
 
@@ -361,52 +429,213 @@ int parse_read(int index,node* root){
 		exit(EXIT_FAILURE);
 	}
 
-	parse_variable(index,root->children[c++]);
+	root -> children[c] = malloc(sizeof(node));
+	parse_variable(index,root -> children[c++]);
 
 	int num;
 	scanf("%d", &num);
 	variables[idx].value = num;
 
+	if(tokens[index + 1][0] != ';'){
+		fprintf(stderr, "Read statement should terminate with ';'\n");
+		exit(EXIT_FAILURE);
+	}
+
 	index += 2;
-  root->children[c] =  malloc(sizeof(node*));
+
+  	root -> children[c] =  malloc(sizeof(node));
 	strcpy(root->children[c++]->name,";");
 
 	return index;
 }
 
-int parse_assignment(int index,node* root){
+int parse_assignment(int index, node* root){
   
 	if(is_variable(tokens[index]) < 0){
 		fprintf(stderr, "Variable %s does not exist\n", tokens[index]);
 		exit(EXIT_FAILURE);
 	}
-  int c = 0;
-  root = malloc(sizeof(node*));
-  strcpy(root->name,ASSIGNMENT);
-	parse_variable(index,root->children[c++]);
+
+	int c = 0;
+	strcpy(root->name,ASSIGNMENT);
+
+	root -> children[c] = malloc(sizeof(node));
+	parse_variable(index,root -> children[c++]);
 	index++;
 
 	if(strcmp(tokens[index], "=")){
 		fprintf(stderr, "Invalid statement\n");
 		exit(EXIT_FAILURE);
 	}
+
+	root -> children[c] = malloc(sizeof(node));
+	strcpy(root -> children[c++] -> name, "=");
   
 	index++;
 
-	char *expr[MAX_VARIABLES];
+	int lim = index;
+	
+	while(tokens[lim++][0] != ';');
 
-	while(strcmp(tokenspindex, const char *s2)){
+	root -> children[c] = malloc(sizeof(node));
+	index = parse_full_expression(index, lim - 1, root -> children[c]);
 
+	assert(index == lim);
+
+	return index;
+}
+
+
+int parse_full_expression(int index, int lim, node* root){
+
+	int c = 0;
+	strcpy(root -> name, EXPRESSION);
+
+	int operator_pos = index;
+
+	int cnt = 0;
+	while(operator_pos < lim && (strcmp(tokens[operator_pos], ">") && strcmp(tokens[operator_pos], "==") || cnt) && cnt >= 0){
+		cnt += strcmp(tokens[operator_pos], "(") == 0;
+		cnt -= strcmp(tokens[operator_pos], ")") == 0;
+		operator_pos++;
 	}
 
+	if(cnt){
+		fprintf(stderr, "Incorrect bracket sequence\n");
+		exit(EXIT_FAILURE);
+	}
+
+	root -> children[c] = malloc(sizeof(node));
+	index = parse_add_subtract(index, operator_pos, root -> children[c++]);
+
+	if(operator_pos == lim)
+		return index;
+
+	root -> children[c] = malloc(sizeof(node));
+	strcpy(root -> children[c++] -> name, tokens[operator_pos]);
+
+	root -> children[c] = malloc(sizeof(node));
+	index = parse_full_expression(operator_pos + 1, lim, root -> children[c++]);
+
 	return index;
 }
 
-int parse_for_loop(int index){
+int parse_add_subtract(int index, int lim, node* root){
+
+	int c = 0;
+	strcpy(root -> name, ADD_SUBTRACT);
+
+	int operator_pos = index;
+	int cnt = 0;
+
+	while(operator_pos < lim && (strcmp(tokens[operator_pos], "+") && strcmp(tokens[operator_pos], "-") || cnt) && cnt >= 0){
+		cnt += strcmp(tokens[operator_pos], "(") == 0;
+		cnt -= strcmp(tokens[operator_pos], ")") == 0;
+		operator_pos++;
+	}
+
+	if(cnt){
+		fprintf(stderr, "Incorrect bracket sequence\n");
+		exit(EXIT_FAILURE);
+	}
+
+	root -> children[c] = malloc(sizeof(node));
+	index = parse_mul_div(index, operator_pos, root -> children[c++]);
+
+	if(operator_pos == lim)
+		return index;
+
+	root -> children[c] = malloc(sizeof(node));
+	strcpy(root -> children[c++] -> name, tokens[operator_pos]);
+
+	root -> children[c] = malloc(sizeof(node));
+	index = parse_add_subtract(operator_pos + 1, lim, root -> children[c++]);
 
 	return index;
 }
 
-int parse_expression(int index, int *value){
+int parse_mul_div(int index, int lim, node* root){
 
+	int c = 0;
+	strcpy(root -> name, MUL_DIVIDE);
+
+	int operator_pos = index;
+	int cnt = 0;
+
+	while(operator_pos < lim && (strcmp(tokens[operator_pos], "*") && strcmp(tokens[operator_pos], "/") || cnt) && cnt >= 0){
+		cnt += strcmp(tokens[operator_pos], "(") == 0;
+		cnt -= strcmp(tokens[operator_pos], ")") == 0;
+		operator_pos++;
+	}
+
+	if(cnt){
+		fprintf(stderr, "Incorrect bracket sequence\n");
+		exit(EXIT_FAILURE);
+	}
+
+	root -> children[c] = malloc(sizeof(node));
+	index = parse_fact(index, operator_pos, root -> children[c++]);
+
+	if(operator_pos == lim)
+		return index;
+
+	root -> children[c] = malloc(sizeof(node));
+	strcpy(root -> children[c++] -> name, tokens[operator_pos]);
+
+	root -> children[c] = malloc(sizeof(node));
+	index = parse_mul_div(operator_pos + 1, lim, root -> children[c++]);
+
+	return index;
+}
+
+int parse_fact(int index, int lim, node* root){
+
+	int c = 0;
+	strcpy(root -> name, FACT);
+
+	int idx = -1;
+
+	if(!strcmp(tokens[index], "(")){
+		
+		if(strcmp(tokens[lim - 1], ")")){
+			fprintf(stderr, "Invalid Expression\n");
+			exit(EXIT_FAILURE);
+		}
+
+		root -> children[c] = malloc(sizeof(node));
+		strcpy(root -> children[c++] -> name, "(");
+
+		root -> children[c] = malloc(sizeof(node));
+		parse_full_expression(index + 1, lim - 1, root -> children[c++]);
+
+		root -> children[c] = malloc(sizeof(node));
+		strcpy(root -> children[c++] -> name, ")");
+	}
+
+	else if(index != lim - 1){
+		fprintf(stderr, "Invalid expression\n");
+		exit(EXIT_FAILURE);
+	}
+
+	else if((idx = is_variable(tokens[index])) >= 0){
+		root -> children[c] = malloc(sizeof(node));
+		parse_variable(index, root -> children[c++]);
+	}
+
+	else if(is_const(tokens[index])){
+		root -> children[c] = malloc(sizeof(node));
+		parse_constant(index, root -> children[c++]);
+	}
+
+	else{
+		fprintf(stderr, "Invalid expression");
+		exit(EXIT_FAILURE);
+	}
+
+	return lim + 1;
+}
+
+int parse_for_loop(int index, node* root){
+
+	return index;
 }
