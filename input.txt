@@ -1,0 +1,5 @@
+int forr, b,c,howareyou;
+
+read b;
+write b;
+write 5632;

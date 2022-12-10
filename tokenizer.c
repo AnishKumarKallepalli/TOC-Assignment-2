@@ -78,9 +78,16 @@ void tokenizer(char *filename)
   {
     for (int i = 0; i < strlen(line); ++i)
     {
-      if (line[i] == '\t' || line[i] == '\n' || line[i] == '\r')
+      // if (line[i] == '\t' || line[i] == '\n' || line[i] == '\r')
+      //   continue;
+      if (line[i] == '\t')
         continue;
-      str[j] = line[i];
+      
+      else if(line[i] == '\n' || line[i] == '\r')
+        str[j] = ' ';
+      
+      else
+        str[j] = line[i];
       j++;
     }
   }

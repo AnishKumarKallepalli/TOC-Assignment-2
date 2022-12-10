@@ -1,0 +1,16 @@
+P->DS|S
+D->int V;
+V->Var,V|Var
+Var->{a-z}+
+Const->{0-9}+
+S->SingS|Sing
+Sing->Ass|W|R|Loop
+W->write Var;|write Const;
+R->read Var;
+Ass->Var=Exp;
+Exp->As>Exp|As==Exp|As
+As->Md+As|Md-As|Md
+Md->Md/Fac|Md*Fac|Fac
+Md->Fac/Md|Fac*Md|Fac
+Fac->(Exp)|Var|Const
+Loop->for(Ass;Exp;Ass){S}
