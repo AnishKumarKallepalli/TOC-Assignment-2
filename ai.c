@@ -15,8 +15,28 @@ typedef struct tree_node {
 int variables[26];
 
 /* Function prototypes */
-
-
+tree_node *parse_statements(char *P);
+tree_node *parse_read_statement(char *P);
+tree_node *parse_write_statement(char *P);
+tree_node *parse_assignment_statement(char *P);
+tree_node *parse_for_loop(char *P);
+tree_node *parse_expression(char *P);
+tree_node *parse_term(char *P);
+tree_node *parse_factor(char *P);
+tree_node *parse_declaration_statement(char *P);
+tree_node *parse_variable_list(char *P) ;
+void eval(tree_node *node);
+void eval_program(tree_node *node);
+void eval_declaration_statement(tree_node *node);
+void eval_variable_list(tree_node *node);
+void eval_statements(tree_node *node);
+void eval_read_statement(tree_node *node);
+void eval_write_statement(tree_node *node);
+void eval_assignment_statement(tree_node *node);
+void eval_for_loop(tree_node *node);
+int eval_expression(tree_node *node);
+int eval_term(tree_node *node);
+int eval_factor(tree_node *node);
 
 /* Parses a program in basic C and returns a syntax tree */
 tree_node *parse_program(char *P) {
