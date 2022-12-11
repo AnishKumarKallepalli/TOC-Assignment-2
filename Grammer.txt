@@ -12,4 +12,4 @@ Exp->Exp>As|Exp==As|As
 As->As+Md|As-Md|Md
 Md->Md/Fac|Md*Fac|Fac
 Fac->(Exp)|Var|Const
-Loop->for(Ass;Exp;Ass){S}
+Loop->for(Ass;Exp;Ass){S};
